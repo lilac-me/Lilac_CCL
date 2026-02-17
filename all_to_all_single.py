@@ -1,6 +1,7 @@
 import torch
 import torch.distributed as dist
 
+
 def all_to_all_single_test():
     dist.init_process_group(backend='gloo')
     world_size = dist.get_world_size() # --nproc_per_node=4 means world_size=4
@@ -19,6 +20,7 @@ def all_to_all_single_test():
 
     print(f"Rank {rank} received tensor:\n {recv_tensor} \n")
     dist.destroy_process_group()
+
 
 if __name__ == "__main__":
     all_to_all_single_test()
