@@ -7,7 +7,7 @@ def all_to_all_single_test():
     rank = dist.get_rank() # rank is the unique identifier of each process, ranging from 0 to world_size-1
 
     # Create a tensor with the rank of the process
-    send_tensor = torch.full((world_size,), rank)
+    send_tensor = torch.full((world_size,), rank) # shape: [world_size], each element is the rank of the process
     recv_tensor = torch.empty_like(send_tensor)
 
     print(f"Rank {rank} send tensor:\n {send_tensor} \n")
