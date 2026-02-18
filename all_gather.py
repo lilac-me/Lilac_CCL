@@ -24,10 +24,8 @@ def all_gather_test():
     # all_gather_into_tensor gathers tensors from all processes and concatenates them into a single tensor
     dist.all_gather_into_tensor(recv_tensor, send_tensor) 
 
-    print("all_gather result (list of tensors):")
-    print(f"Rank {rank} received tensor:\n {recv_tensor_list} \n")
-    print("all_gather_into_tensor result (single concatenated tensor):")
-    print(f"Rank {rank} received tensor:\n {recv_tensor} \n")
+    print(f"all_gather result (list of tensors):\n Rank {rank} received tensor:\n {recv_tensor_list} \n")
+    print(f"all_gather_into_tensor result (single concatenated tensor):\n Rank {rank} received tensor:\n {recv_tensor} \n")
     dist.destroy_process_group()
 
 
