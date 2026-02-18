@@ -3,6 +3,21 @@ import torch.distributed as dist
 
 
 def reduce_scatter_test():
+    """
+    Two stages, that is
+        Reduce:
+            position 0: 0 + 4 + 8 + 12 = 24
+            position 1: 1 + 5 + 9 + 13 = 28
+            position 2: 2 + 6 + 10 + 14 = 32
+            position 3: 3 + 7 + 11 + 15 = 36
+    So the intermediate result is all of ranks have [24, 28, 32, 36]
+        Scater:
+        rank 0 get position 0 is 24
+        rank 1 get position 1 is 28
+        rank 2 get position 2 is 32
+        rank 3 get position 3 is 36
+    Note that the data (numel) will be splited as N (world_size) partitions
+    """
     dist.init_process_group(backend="gloo")
     world_size = dist.get_world_size()  # --nproc_per_node=4 means world_size=4
     rank = dist.get_rank()  # rank is the unique identifier of each process, ranging from 0 to world_size-1
