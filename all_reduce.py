@@ -26,7 +26,7 @@ def all_reduce_test():
     dist.all_gather_into_tensor(recv_tensor_allgather, recv_tensor_reducescater)
     print(f"all_gather_in_tensor: Rank {rank} received tensor:\n {recv_tensor_allgather}\n")
 
-    print(f"Rank {rank} result equals: {torch.allclose(recv_tensor_allreduce, recv_tensor_allgather)}")
+    print(f"Rank {rank} result equals: {torch.allclose(recv_tensor_allreduce, recv_tensor_allgather)}\n")
 
     dist.destroy_process_group()
 
@@ -45,5 +45,19 @@ if __name__ == "__main__":
 #  tensor([12, 13, 14, 15], dtype=torch.int32
 
 # all_reduce result (tensors):
+# Rank 0, 1, 2, 3 received tensor:
+#  tensor([24, 28, 32, 36], dtype=torch.int32)
+
+# all_reduce = reduce_scatter + all_gather
+# reduce_scatter_tensor: 
+# Rank 0 received tensor:
+#  tensor([24], dtype=torch.int32)
+# Rank 1 received tensor:
+#  tensor([28], dtype=torch.int32)
+# Rank 2 received tensor:
+#  tensor([32], dtype=torch.int32)
+# Rank 3 received tensor:
+#  tensor([36], dtype=torch.int32)
+# all_gather_in_tensor: 
 # Rank 0, 1, 2, 3 received tensor:
 #  tensor([24, 28, 32, 36], dtype=torch.int32)
