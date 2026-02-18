@@ -30,3 +30,13 @@ def send_recv_test():
 
 if __name__ == "__main__":
     send_recv_test()
+
+# Rank 0 send tensor: tensor([0, 1, 2, 3], dtype=torch.int32)
+# Rank 1 send tensor: tensor([4, 5, 6, 7], dtype=torch.int32)
+# Rank 2 send tensor: tensor([8, 9, 10, 11], dtype=torch.int32)
+# Rank 3 send tensor: tensor([12, 13, 14, 15], dtype=torch.int32)
+
+# Rank 0 finished, received tensor: tensor([12, 13, 14, 15], dtype=torch.int32)
+# Rank 1 finished, received tensor: tensor([0, 1, 2, 3], dtype=torch.int32)
+# Rank 2 finished, received tensor: tensor([4, 5, 6, 7], dtype=torch.int32)
+# Rank 3 finished, received tensor: tensor([8, 9, 10, 11], dtype=torch.int32)
