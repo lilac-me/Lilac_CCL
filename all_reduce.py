@@ -10,14 +10,24 @@ def all_reduce_test():
     send_tensor = torch.tensor(
         [rank * world_size + i for i in range(world_size)], dtype=torch.int32,
     )
-    recv_tensor = send_tensor.clone()
+    recv_tensor_allreduce = send_tensor.clone()
+    recv_tensor_reducescater = torch.empty(send_tensor.numel() // world_size, dtype=torch.int32)
+    recv_tensor_allgather = torch.empty_like(send_tensor, dtype=send_tensor.dtype)
 
     print(f"Rank {rank} send tensor:\n {send_tensor}\n")
 
     # Perform all-reduce communication
-    dist.all_reduce(recv_tensor, op=dist.ReduceOp.SUM)
+    dist.all_reduce(recv_tensor_allreduce, op=dist.ReduceOp.SUM)
+    print(f"all_reduce: Rank {rank} received tensor:\n {recv_tensor_allreduce}\n")
 
-    print(f"Rank {rank} received tensor:\n {recv_tensor}\n")
+    # Simulate all-reduce by reduce_scatter + all_gather
+    dist.reduce_scatter_tensor(recv_tensor_reducescater, send_tensor)
+    print(f"reduce_scatter_tensor: Rank {rank} received tensor:\n {recv_tensor_reducescater}")
+    dist.all_gather_into_tensor(recv_tensor_allgather, recv_tensor_reducescater)
+    print(f"all_gather_in_tensor: Rank {rank} received tensor:\n {recv_tensor_allgather}\n")
+
+    print(f"Rank {rank} result equals: {torch.allclose(recv_tensor_allreduce, recv_tensor_allgather)}")
+
     dist.destroy_process_group()
 
 
