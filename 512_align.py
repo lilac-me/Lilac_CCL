@@ -535,3 +535,51 @@ def check_fsdp_alignment(
         print("[Ascend] All FSDP flat parameters are 512-byte aligned.")
     
     return all_aligned
+
+
+_orig_all_gather_into_tensor = dist.all_gather_into_tensor
+_orig_reduce_scatter_tensor = dist.reduce_scatter_tensor
+ 
+def _aligned_all_gather_into_tensor(output, input_tensor, group=None, async_op=False):
+    padded_input, pad_size = pad_tensor_for_comm(input_tensor, ASCEND_ALIGNMENT_BYTES)
+    if pad_size > 0:
+        world_size = dist.get_world_size(group)
+        padded_output = torch.empty(
+            padded_input.numel() * world_size,
+            dtype=input_tensor.dtype,
+            device=input_tensor.device,
+        )
+        result = _orig_all_gather_into_tensor(padded_output, padded_input, group=group, async_op=async_op)
+        # Unpad each chunk
+        chunk_size = input_tensor.numel()
+        padded_chunk_size = padded_input.numel()
+        for i in range(world_size):
+            src_start = i * padded_chunk_size
+            dst_start = i * chunk_size
+            output[dst_start:dst_start + chunk_size].copy_(
+                padded_output[src_start:src_start + chunk_size]
+            )
+        return result
+    else:
+        return _orig_all_gather_into_tensor(output, input_tensor, group=group, async_op=async_op)
+ 
+def _aligned_reduce_scatter_tensor(output, input_tensor, op=dist.ReduceOp.SUM, group=None, async_op=False):
+    world_size = dist.get_world_size(group)
+    chunk_size = input_tensor.numel() // world_size
+    padded_chunk_size = align_numel(chunk_size, input_tensor.dtype)
+    pad_per_chunk = padded_chunk_size - chunk_size
+    
+    if pad_per_chunk > 0:
+        chunks = input_tensor.view(world_size, chunk_size)
+        padding = torch.zeros(world_size, pad_per_chunk, dtype=input_tensor.dtype, device=input_tensor.device)
+        padded_input = torch.cat([chunks, padding], dim=1).contiguous().view(-1)
+        padded_output = torch.empty(padded_chunk_size, dtype=input_tensor.dtype, device=input_tensor.device)
+        result = _orig_reduce_scatter_tensor(padded_output, padded_input, op=op, group=group, async_op=async_op)
+        output.copy_(padded_output[:chunk_size])
+        return result
+    else:
+        return _orig_reduce_scatter_tensor(output, input_tensor, op=op, group=group, async_op=async_op)
+ 
+# Apply monkey-patch
+dist.all_gather_into_tensor = _aligned_all_gather_into_tensor
+dist.reduce_scatter_tensor = _aligned_reduce_scatter_tensor
